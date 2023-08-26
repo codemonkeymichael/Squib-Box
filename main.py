@@ -5,7 +5,7 @@ import _thread
 #Global vars
 status = 0
 triggerBtnPush = False
-cueDelayTime = 3.0
+cueDelayTime = 1.0
 
 #setup pwm for the servo
 pwm = PWM(Pin(15))
@@ -37,20 +37,20 @@ Cue3.RelayOutput = Pin(6, Pin.OUT) #white wire - skeleton arms and legs
 Cue4.RelayOutput = Pin(7, Pin.OUT) #yellow wire - 
 Cue5.RelayOutput = Pin(8, Pin.OUT) #black wire
 Cue6.RelayOutput = Pin(9, Pin.OUT) #blue wire
-Cue7.RelayOutput = Pin(10, Pin.OUT) #yellow wire
+#Cue7.RelayOutput = Pin(10, Pin.OUT) #yellow wire
 #Cue8.RelayOutput = Pin(11, Pin.OUT) #
 
 
 #empty array
 CueArray = [] 
 #populate the array
-CueArray.insert(0, [Cue1,1,0,0.25])
-CueArray.insert(1, [Cue2,5000,2000,0.55])
-CueArray.insert(2, [Cue3,0,0,0.25])
-CueArray.insert(3, [Cue4,1,0,0.25])
-CueArray.insert(4, [Cue5,1,0,0.25])
-CueArray.insert(5, [Cue6,1,0,0.25])
-CueArray.insert(6, [Cue7,1,0,0.25])
+CueArray.insert(1,[Cue1,1,0,0.25,"Cyrus shoots a hole in balcony"])
+CueArray.insert(2,[Cue2,5000,2000,0.55,"Cyrus fire into skelton swinging"])
+CueArray.insert(3,[Cue3,0,0,0.25,"Skeleton arms and legs fall off"])
+CueArray.insert(4,[Cue4,1,0,0.25,"Boone shoots and misses"])
+CueArray.insert(5,[Cue5,1,0,0.25,"Cyrus shoots Boone"])
+CueArray.insert(6,[Cue6,1,0,0.25,"Cyrus misses the witch"])
+#CueArray.insert(7,[Cue7,1,0,0.25,""])
 
 print("There are " + str(len(CueArray)) + " cues in the show")
 
@@ -61,7 +61,8 @@ def input_thread_core0():
     
     triggerBtn = Pin(0, Pin.IN, Pin.PULL_DOWN)
     stopBtn = Pin(1, Pin.IN, Pin.PULL_DOWN)
-    triggerWireles =  Pin(4, Pin.IN, Pin.PULL_DOWN)
+    triggerWireless = Pin(4, Pin.IN, Pin.PULL_DOWN)
+    gunIsCocked = False
 
     while True:
         if triggerBtn.value():
@@ -79,27 +80,35 @@ def input_thread_core0():
                 #How long before aother click
                 sleep(cueDelayTime)                
                 continue
-            
+        #The Show has started
         if status > 0:
-            if triggerBtn.value() or triggerWireles.value():
-                triggerBtnPush = True
-                print("Fire Cue " + str(status)) 
-                Cue = CueArray[status - 1][0].RelayOutput
-                print("  - fire 1 with value  " + str(CueArray[status - 1][1]))
-                Cue(CueArray[status - 1][1])                
-                #How long to hold fire
-                print("  - sleep for " + str(CueArray[status - 1][3]))
-                sleep(CueArray[status - 1][3])
-                #fire
-                print("  - fire 2 with value " + str(CueArray[status - 1][2]))
-                Cue(CueArray[status - 1][2])          
+            #
+            if triggerWireless.value() == 1 and gunIsCocked == False:
+                print("Gun Cocked")
+                gunIsCocked = True
+                sleep(cueDelayTime)
+                continue
+            if triggerWireless.value() == 0 and gunIsCocked == True:
+                print("triggerWireles.value()=" + str(triggerWireless.value()) + "   gunIsCocked=" + str(gunIsCocked))
+                gunIsCocked = False
+                print("Fire Cue " + str(status) + " " + CueArray[status - 1][4])                
+                if CueArray[status - 1][0] is not None:
+                    Cue = CueArray[status - 1][0].RelayOutput
+                    print("  - fire 1 with value  " + str(CueArray[status - 1][1]))
+                    Cue(CueArray[status - 1][1])                
+                    #How long to hold fire
+                    print("  - sleep for " + str(CueArray[status - 1][3]))
+                    sleep(CueArray[status - 1][3])
+                    #fire
+                    print("  - fire 2 with value " + str(CueArray[status - 1][2]))
+                    Cue(CueArray[status - 1][2])
                 sleep(cueDelayTime)
                 status += 1                
                 if status > len(CueArray):
                     status = 0
                     print("Thats the end of this show, start a new show")
                     continue
-                print("Cue " + str(status) + " Is Next") 
+                print("Cue " + str(status) + " Is Next")
                
            
         if stopBtn.value():
@@ -156,7 +165,8 @@ def status_thread_core1():
                 sleep(0.80)
                 continue
 
-        #This should never run  
+        #This should never run
+            
         triggerLed(0)
         stopLed(0)
 
