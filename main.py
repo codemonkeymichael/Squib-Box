@@ -125,41 +125,59 @@ def input_thread_core0():
 def status_thread_core1():
     global status
     global triggerBtnPush
-    triggerLed = Pin(2, Pin.OUT)
-    stopLed = Pin(3, Pin.OUT)
+    
+    triggerLed = PWM(Pin(2))
+    triggerLed.freq(50)
+    triggerLedValueMax = 4000
+    triggerLedValue = 2000
+    triggerLed.duty_u16(triggerLedValue)
+   
+    stopLed = PWM(Pin(3))
+    stopLed.freq(50)
+    stopBtnValueMax = 4000
+    stopBtnValue = 2000
+    stopLed.duty_u16(stopBtnValue)
+    
     
     blinkCount = 0
     while True:
         if triggerBtnPush:
             triggerBtnPush = False
-            triggerLed(1)
+            triggerLed.duty_u16(triggerLedValueMax)
             sleep(cueDelayTime)
-            triggerLed(0)
+            triggerLed.duty_u16(0)
             continue
         else:            
             if status == -1:
-                #Blink the stop button fast
-                #Indicats that the green btn must be pushed to start the show
-                triggerLed(0)         
-                stopLed.toggle()
+                #Blink the stop button fast the           
+                triggerLed.duty_u16(0)
+                stopLed.duty_u16(stopBtnValue)
+                if stopBtnValue == stopBtnValueMax :
+                    stopBtnValue = 0
+                else :
+                    stopBtnValue = stopBtnValueMax             
                 sleep(0.1)
                 continue
             if status == 0:
                 #Blink the trigger button fast
                 #Indicats that the green btn must be pushed to start the show
-                stopLed(0)           
-                triggerLed.toggle()
+                stopLed.duty_u16(0)          
+                triggerLed.duty_u16(triggerLedValue)
+                if triggerLedValue == triggerLedValueMax :
+                    triggerLedValue = 0
+                else :
+                    triggerLedValue = triggerLedValueMax  
                 sleep(0.1)
                 continue
-            else:
-                stopLed(1)
+            else:             
+                stopLed.duty_u16(stopBtnValueMax)             
                 #Blink the trigger button the status number of times
                 #Indicats that the we are going to play cue# (green btn) or stop (red btn)
                 i = 0
                 while i < status:                
-                    triggerLed(1)
+                    triggerLed.duty_u16(triggerLedValueMax)
                     sleep(0.10)
-                    triggerLed(0)
+                    triggerLed.duty_u16(0)
                     sleep(0.10)
                     i = i + 1
                 sleep(0.80)
@@ -168,7 +186,7 @@ def status_thread_core1():
         #This should never run
             
         triggerLed(0)
-        stopLed(0)
+        stopLed.duty_u16(0)   
 
 
 #Start the threads
