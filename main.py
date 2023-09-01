@@ -5,7 +5,7 @@ import _thread
 #Global vars
 status = 0
 triggerBtnPush = False
-cueDelayTime = 1.0
+cueDelayTime = 0.25
 
 #setup pwm for the servo
 pwm = PWM(Pin(15))
