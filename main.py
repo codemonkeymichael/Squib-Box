@@ -7,36 +7,43 @@ status = 0
 triggerBtnPush = False
 cueDelayTime = 0.25
 
-#setup pwm for the servo
-pwm = PWM(Pin(15))
-pwm.freq(50)
+##setup pwm for the servo
+#pwm = PWM(Pin(15))
+#pwm.freq(50)
 
 #build an empty object of ins and outs
 class CueObj:
     # constructor of CueObj class
     def __init__(self):
         self.RelayOutput = None
-    def SkeletonMotor(motorPos):
-        print("    - run motor to position " + str(motorPos))
-        pwm.duty_u16(motorPos)     
-   
+        
+    #def SkeletonMotor(motorPos):
+        #print("    - run motor to position " + str(motorPos))
+        #pwm.duty_u16(motorPos) 
         
 #instantiation
 Cue1 = CueObj() 
 Cue2 = CueObj()
 Cue3 = CueObj()
 Cue4 = CueObj()
-Cue5 = CueObj()
-Cue6 = CueObj()
-Cue7 = CueObj()
+#Cue5 = CueObj()
+#Cue6 = CueObj()
+#Cue7 = CueObj()
 
 #populate the objects
-Cue1.RelayOutput = Pin(5, Pin.OUT) #blue wire - hole in the balcony
-Cue2.RelayOutput = CueObj.SkeletonMotor
-Cue3.RelayOutput = Pin(6, Pin.OUT) #white wire - skeleton arms and legs
-Cue4.RelayOutput = Pin(7, Pin.OUT) #yellow wire - 
-Cue5.RelayOutput = Pin(8, Pin.OUT) #black wire
-Cue6.RelayOutput = Pin(9, Pin.OUT) #blue wire
+#2024
+Cue1.RelayOutput = Pin(5, Pin.OUT) #blue wire - Jack gets shot
+Cue2.RelayOutput = Pin(6, Pin.OUT) #white wire - Roxie gets shot
+Cue3.RelayOutput = Pin(7, Pin.OUT) #yellow wire - Boone shoots and misses squib
+Cue4.RelayOutput = Pin(8, Pin.OUT) #black wire - Boone shoots and misses debris
+
+#2023
+#Cue1.RelayOutput = Pin(5, Pin.OUT) #blue wire - hole in the balcony
+#Cue2.RelayOutput = CueObj.SkeletonMotor
+#Cue3.RelayOutput = Pin(6, Pin.OUT) #white wire - skeleton arms and legs
+#Cue4.RelayOutput = Pin(7, Pin.OUT) #yellow wire - 
+#Cue5.RelayOutput = Pin(8, Pin.OUT) #black wire
+#Cue6.RelayOutput = Pin(9, Pin.OUT) #blue wire
 #Cue7.RelayOutput = Pin(10, Pin.OUT) #yellow wire
 #Cue8.RelayOutput = Pin(11, Pin.OUT) #
 
@@ -44,12 +51,18 @@ Cue6.RelayOutput = Pin(9, Pin.OUT) #blue wire
 #empty array
 CueArray = [] 
 #populate the array
-CueArray.insert(1,[Cue1,1,0,0.25,"Cyrus shoots a hole in balcony"])
-CueArray.insert(2,[Cue2,5000,2000,0.55,"Cyrus fire into skelton swinging"])
-CueArray.insert(3,[Cue3,0,0,0.25,"Skeleton arms and legs fall off"])
-CueArray.insert(4,[Cue4,1,0,0.25,"Boone shoots and misses"])
-CueArray.insert(5,[Cue5,1,0,0.25,"Cyrus shoots Boone"])
-CueArray.insert(6,[Cue6,1,0,0.25,"Cyrus misses the witch"])
+#2024
+CueArray.insert(1,[Cue1,1,0,0.25,"Jack gets shot"])
+CueArray.insert(2,[Cue2,1,0,0.25,"Roxie gets shot"])
+CueArray.insert(3,[Cue3,1,0,0.25,"Boone shoots and misses squib"])
+CueArray.insert(4,[Cue4,1,0,0.25,"Boone shoots and misses debris"])
+#2023
+#CueArray.insert(1,[Cue1,1,0,0.25,"Cyrus shoots a hole in balcony"])
+#CueArray.insert(2,[Cue2,5000,2000,0.55,"Cyrus fire into skelton swinging"])
+#CueArray.insert(3,[Cue3,0,0,0.25,"Skeleton arms and legs fall off"])
+#CueArray.insert(4,[Cue4,1,0,0.25,"Boone shoots and misses"])
+#CueArray.insert(5,[Cue5,1,0,0.25,"Cyrus shoots Boone"])
+#CueArray.insert(6,[Cue6,1,0,0.25,"Cyrus misses the witch"])
 #CueArray.insert(7,[Cue7,1,0,0.25,""])
 
 print("There are " + str(len(CueArray)) + " cues in the show")
@@ -72,12 +85,7 @@ def input_thread_core0():
                 print("Start the show")
                 print("Cue 1 Is Next")
                 triggerBtnPush = True
-                status = 1
-                #turn on the skeleton              
-                Cue3.RelayOutput(1)
-                #set the motor to default position
-                pwm.duty_u16(2000)
-                #How long before aother click
+                status = 1        
                 sleep(cueDelayTime)                
                 continue
         #The Show has started
@@ -120,75 +128,7 @@ def input_thread_core0():
         
      
             
-       
-        
-def status_thread_core1():
-    global status
-    global triggerBtnPush
-    
-    triggerLed = PWM(Pin(2))
-    triggerLed.freq(50)
-    triggerLedValueMax = 4000
-    triggerLedValue = 2000
-    triggerLed.duty_u16(triggerLedValue)
-   
-    stopLed = PWM(Pin(3))
-    stopLed.freq(50)
-    stopBtnValueMax = 4000
-    stopBtnValue = 2000
-    stopLed.duty_u16(stopBtnValue)
-    
-    
-    blinkCount = 0
-    while True:
-        if triggerBtnPush:
-            triggerBtnPush = False
-            triggerLed.duty_u16(triggerLedValueMax)
-            sleep(cueDelayTime)
-            triggerLed.duty_u16(0)
-            continue
-        else:            
-            if status == -1:
-                #Blink the stop button fast the           
-                triggerLed.duty_u16(0)
-                stopLed.duty_u16(stopBtnValue)
-                if stopBtnValue == stopBtnValueMax :
-                    stopBtnValue = 0
-                else :
-                    stopBtnValue = stopBtnValueMax             
-                sleep(0.1)
-                continue
-            if status == 0:
-                #Blink the trigger button fast
-                #Indicats that the green btn must be pushed to start the show
-                stopLed.duty_u16(0)          
-                triggerLed.duty_u16(triggerLedValue)
-                if triggerLedValue == triggerLedValueMax :
-                    triggerLedValue = 0
-                else :
-                    triggerLedValue = triggerLedValueMax  
-                sleep(0.1)
-                continue
-            else:             
-                stopLed.duty_u16(stopBtnValueMax)             
-                #Blink the trigger button the status number of times
-                #Indicats that the we are going to play cue# (green btn) or stop (red btn)
-                i = 0
-                while i < status:                
-                    triggerLed.duty_u16(triggerLedValueMax)
-                    sleep(0.10)
-                    triggerLed.duty_u16(0)
-                    sleep(0.10)
-                    i = i + 1
-                sleep(0.80)
-                continue
-
-        #This should never run
-            
-        triggerLed(0)
-        stopLed.duty_u16(0)   
-
-
+  
 #Start the threads
-second_thread = _thread.start_new_thread(status_thread_core1, ())
+#second_thread = _thread.start_new_thread(status_thread_core1, ())
 input_thread_core0()
