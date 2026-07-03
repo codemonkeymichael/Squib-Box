@@ -5,7 +5,7 @@ import _thread
 #Global vars
 status = 0
 triggerBtnPush = False
-cueDelayTime = 0.25from machine import Pin, PWM
+cueDelayTime = 0.25
 from time import sleep
 import _thread
 
