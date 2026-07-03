@@ -1,5 +1,5 @@
 # Squib-Box
-Micro Python project for Pi Pico that fires of gun shot squibs  
+Micro Python project for Pi Pico that fires off gun shot squibs  
 
 boot up the pi so you can see it as a folder in windows push the bootsel button and plug it into usb
 
