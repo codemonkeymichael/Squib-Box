@@ -1,21 +1,98 @@
-# Squib-Box
-Micro Python project for Pi Pico that fires off gun shot squibs  
+# Squib-Box: DMX Theater Control System
 
-boot up the pi so you can see it as a folder in windows push the bootsel button and plug it into usb
+A **Raspberry Pi Pico + MAX485** DMX receiver for firing theater effects (squibs, lights, motors, etc.) from QLC+ lighting software.
 
-add the the .utf file to the drive
+## Features
 
-Set COM port press the Bootselect button on the Pico and plung into usb to computer
-In Thony > Run > Configure Interpreter > Port or WebREPL (To find it go to the device manager)
+✅ **16 independent GPIO triggers** – one per DMX channel  
+✅ **3-frame debouncing** – theater-grade reliability (~70ms response)  
+✅ **Edge detection** – Channel 1 fires on falling edge (OFF), Channels 2-16 on rising edge (ON)  
+✅ **DMX break detection** – proper frame synchronization  
+✅ **250ms GPIO pulse** – clean relay/mosfet activation  
+✅ **Real-time monitoring** – prints channel values for debugging  
 
-Save the program in Thonny on to the pi pico as main.py hit the play button
+## Hardware Requirements
 
+- **Raspberry Pi Pico** (RP2040)
+- **MAX485 TTL-to-RS485 module** (~$2-3)
+- **Enttec DMX USB Pro** or compatible DMX controller
+- **Relay modules** or mosfet drivers for load switching
+- **Standard DMX XLR cables** (3-pin)
 
-In MicroPython is to use a $2 hardware module called a MAX485 TTL-to-RS485 Breakout Board.This small board does all the heavy electrical translation for you. It allows you to plug standard DMX wires into one side and read clean MicroPython data directly out of the other side using the Pico's built-in UART port.
+## Quick Start
 
-Step 1: Get the Hardware ModuleSearch online for a "MAX485 TTL to RS485 module". They cost around $1 to $3 and feature a green screw-terminal block on one end for your DMX signal.
+1. Flash MicroPython to Pico
+2. Upload `main2026.py` as `main.py` to Pico
+3. Wire MAX485 module (see Wiring section)
+4. Connect DMX cable from Enttec to MAX485
+5. Wire GPIO outputs to relay modules
+6. Power on – DMX receiver starts automatically
 
-Step 2: Wire It for ReceivingConnect the module to your Raspberry Pi Pico like this:
+## Wiring
 
-MAX485 Module Pin
-Pi Pico PinWhy?VCCVBUS (Pin 40)Powers the chip with 5 Volts.GNDGND (Any Ground Pin)Common circuit ground.RO (Receiver Out)GPIO 1 (Pin 2 / UART0 RX)Sends incoming DMX data straight into the Pico.RE (Receiver Enable)GND (Any Ground Pin)Tying this to ground keeps the chip in Listen Mode.DE (Driver Enable)GND (Any Ground Pin)Disables transmitting so it doesn't conflict with incoming data.DI (Driver In)Leave DisconnectedNot needed for receiving.On the green terminal side: Connect terminal A to DMX Pin 3 (Data+) and terminal B to DMX Pin 2 (Data-).
+### MAX485 Module to Pico
+
+| MAX485 Pin | Pico Pin | Purpose |
+|-----------|----------|---------|
+| VCC | 3.3V | Power |
+| GND | GND | Ground |
+| RO | GPIO 5 | DMX data (UART1 RX) |
+| DE, RE | GND | Receive mode only |
+| A, B | DMX XLR 3, 2 | RS485 signal |
+
+### GPIO Trigger Outputs to Relays
+
+| Channel | GPIO | Trigger |
+|---------|------|---------|
+| 1 | GPIO 2 | Falling edge (OFF) |
+| 2-16 | GPIO 3-4, 6-18 | Rising edge (ON) |
+
+## QLC+ Usage
+
+1. Set Channel 1 HIGH (>100) – turn LOW to fire main trigger
+2. Set Channels 2-16 LOW (≤100) – turn ON to fire effects
+3. Each channel transition triggers a 250ms GPIO pulse
+
+## How It Works
+
+- **DMX break detection** syncs to frame start
+- **3-frame debouncing** ensures reliability
+- **Edge detection** monitors channel transitions
+- **GPIO pulse** fires relay/mosfet on state change
+- **Continuous loop** ready for next cue
+
+## Relay Wiring Example
+
+```
+GPIO pin (3.3V)
+    ↓
+[470Ω resistor]
+    ↓
+[Transistor / Relay coil]
+    ↓
+[1N4007 diode to GND]  ← Protection
+    ↓
+[Relay contacts → Load]
+```
+
+## Troubleshooting
+
+**No data:** Check MAX485 wiring and A/B polarity  
+**No triggers:** Verify GPIO wiring and QLC+ channel values >100  
+**Intermittent:** Add flyback diodes, check solder joints  
+
+See `.instructions.md` for detailed technical notes.
+
+## Files
+
+- `main2026.py` – DMX receiver + 16-channel triggers (production)
+- `.instructions.md` – Technical deep-dive and project history
+- `RPI_PICO2-*.uf2` – MicroPython firmware
+
+## Author Notes
+
+Built for reliable theater shows. Tested with Enttec DMX USB Pro + QLC+ 4.13.1. Response time ~70-75ms (acceptable for mechanical effects).
+
+---
+
+*For detailed setup and troubleshooting, see `.instructions.md`*
