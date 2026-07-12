@@ -1,5 +1,5 @@
 from machine import Pin, UART
-from time import sleep_ms, ticks_us, ticks_diff
+from time import sleep_ms, ticks_us, ticks_diff, ticks_ms
 import _thread
 
 # ============================================================================
@@ -39,8 +39,11 @@ for pin in trigger_pins.values():
     pin.low()
 
 # DMX activity LED (GPIO 0)
+# Blinks to indicate active DMX connection
 dmx_led = Pin(0, Pin.OUT)
 dmx_led.low()
+dmx_led_blink_time = 0
+dmx_last_activity = 0  # Start at 0 (triggers idle/heartbeat mode)
 
 # --- Core 1: Pulse Runner (250ms pulse on rising edge) ---
 pending_triggers = []
@@ -86,9 +89,25 @@ print(">>> RUNNING dmx_receiver.py (STANDARD DMX512, OFFSET +1) <<<\r\n")
 print("Starting DMX Receiver (3-frame debounce, 16-channel trigger, dual-core)...\r\n")
 
 while True:
+    # Blink LED to show DMX activity
+    # Fast blink (100ms on/off) when receiving data, OFF when idle
+    current_ms = ticks_ms()
+    time_since_activity = current_ms - dmx_last_activity if dmx_last_activity > 0 else 10000
+    
+    if time_since_activity < 1000:  # Active (received data in last 1 second)
+        # Fast blink when active
+        if (current_ms // 100) % 2 == 0:
+            dmx_led.high()
+        else:
+            dmx_led.low()
+    else:
+        # LED off when no DMX data
+        dmx_led.low()
+    
     n = dmx_receiver.any()
 
     if n > 0:
+        dmx_last_activity = ticks_ms()  # Update last activity timestamp
         data = dmx_receiver.read(n)
         if data:
             rx_buf.extend(data)
@@ -145,8 +164,6 @@ while True:
                     
                     # Process debounce every 3 frames
                     if frame_count % 3 == 0:
-                        dmx_led.toggle()
-                        
                         for ch_num in range(1, 17):
                             ch = ch_num - 1
                             vals = ch_history[ch]
@@ -154,10 +171,12 @@ while True:
                             all_off = all(v <= 100 for v in vals)
                             
                             if ch_num == 1:
-                                # Channel 1: Level control
+                                # Channel 1: Level control (continuous HIGH/LOW, NOT a pulse)
+                                # > 100: GPIO HIGH (stays on)
+                                # <= 100: GPIO LOW (stays off)
                                 if all_on and not last_state[ch]:
                                     trigger_pins[1].high()
-                                    print(f">>> Ch1 ON  (vals: {vals})")
+                                    print(f">>> Ch1 ON (vals: {vals})")
                                     last_state[ch] = True
                                 elif all_off and last_state[ch]:
                                     trigger_pins[1].low()
