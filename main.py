@@ -35,6 +35,9 @@ trigger_pins = {
     15: Pin(17, Pin.OUT),
     16: Pin(18, Pin.OUT),
 }
+
+# GPIO number lookup by channel
+gpio_map = {1: 2, 2: 3, 3: 4, 4: 6, 5: 7, 6: 8, 7: 9, 8: 10, 9: 11, 10: 12, 11: 13, 12: 14, 13: 15, 14: 16, 15: 17, 16: 18}
 for pin in trigger_pins.values():
     pin.low()
 
@@ -60,11 +63,12 @@ def core1_runner():
         
         if ch_num:
             pin = trigger_pins[ch_num]
+            gpio_num = gpio_map[ch_num]
             pin.high()
-            print(f"Ch{ch_num} FIRE (250ms pulse)")
+            print(f"Ch{ch_num} FIRE (GPIO {gpio_num} HIGH) - 250ms pulse")
             sleep_ms(250)
             pin.low()
-            print(f"Ch{ch_num} RELEASE")
+            print(f"Ch{ch_num} RELEASE (GPIO {gpio_num} LOW)")
         else:
             sleep_ms(10)
 
@@ -176,17 +180,18 @@ while True:
                                 # <= 100: GPIO LOW (stays off)
                                 if all_on and not last_state[ch]:
                                     trigger_pins[1].high()
-                                    print(f">>> Ch1 ON (vals: {vals})")
+                                    print(f">>> Ch1 ON (GPIO 2 HIGH) - vals: {vals}")
                                     last_state[ch] = True
                                 elif all_off and last_state[ch]:
                                     trigger_pins[1].low()
-                                    print(f">>> Ch1 OFF (vals: {vals})")
+                                    print(f">>> Ch1 OFF (GPIO 2 LOW) - vals: {vals}")
                                     last_state[ch] = False
                             else:
                                 # Channels 2-16: Rising edge → 250ms pulse
                                 if all_on and not last_state[ch]:
                                     queue_trigger(ch_num)
-                                    print(f">>> Ch{ch_num} QUEUED PULSE (vals: {vals})")
+                                    gpio_num = gpio_map[ch_num]
+                                    print(f">>> Ch{ch_num} QUEUED PULSE (GPIO {gpio_num} HIGH) - vals: {vals}")
                                     last_state[ch] = True
                                 elif all_off:
                                     last_state[ch] = False
