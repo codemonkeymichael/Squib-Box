@@ -20,10 +20,10 @@ A **Raspberry Pi Pico + MAX485** DMX receiver for firing theater effects from an
 ## Quick Start
 
 1. Flash MicroPython to Pico: `RPI_PICO2-20241129-v1.24.1.uf2`
-2. Upload `dmx_receiver.py` to Pico
+2. Upload `main.py` to Pico
 3. Wire MAX485 module (see diagram)
 4. Connect DMX controller to MAX485
-5. Power on
+5. Unplug/replug Pico – script autorun on boot
 
 ## Wiring
 
@@ -40,6 +40,27 @@ A **Raspberry Pi Pico + MAX485** DMX receiver for firing theater effects from an
 - GPIO 2: Channel 1 (level control)
 - GPIO 3-4, 6-18: Channels 2-16 (pulse triggers)
 
+**Complete DMX Channel to GPIO Mapping:**
+
+| DMX Channel | GPIO | Behavior |
+|-------------|------|----------|
+| 1 | 2 | Level control (HIGH > 100, LOW ≤ 100) |
+| 2 | 3 | Pulse on rising edge |
+| 3 | 4 | Pulse on rising edge |
+| 4 | 6 | Pulse on rising edge |
+| 5 | 7 | Pulse on rising edge |
+| 6 | 8 | Pulse on rising edge |
+| 7 | 9 | Pulse on rising edge |
+| 8 | 10 | Pulse on rising edge |
+| 9 | 11 | Pulse on rising edge |
+| 10 | 12 | Pulse on rising edge |
+| 11 | 13 | Pulse on rising edge |
+| 12 | 14 | Pulse on rising edge |
+| 13 | 15 | Pulse on rising edge |
+| 14 | 16 | Pulse on rising edge |
+| 15 | 17 | Pulse on rising edge |
+| 16 | 18 | Pulse on rising edge |
+
 ⚠️ **A/B Polarity**: If all channels read 0, swap the A/B wires at MAX485.
 
 ## Troubleshooting
@@ -52,7 +73,7 @@ A **Raspberry Pi Pico + MAX485** DMX receiver for firing theater effects from an
 
 ## Files
 
-- `dmx_receiver.py` – Main receiver script
+- `main.py` – Main receiver script (auto-runs on Pico boot)
 - `.instructions.md` – Detailed technical docs
 - `RPI_PICO2-*.uf2` – MicroPython firmware
 
