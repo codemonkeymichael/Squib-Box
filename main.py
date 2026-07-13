@@ -62,19 +62,20 @@ def core1_runner():
                 ch_num = None
         
         if ch_num:
-            pin = trigger_pins[ch_num]
-            gpio_num = gpio_map[ch_num]
+            pin = trigger_pins[ch_num[0]]
+            gpio_num = gpio_map[ch_num[0]]
+            dmx_ch = ch_num[1]
             pin.high()
-            print(f"Ch{ch_num} FIRE (GPIO {gpio_num} HIGH) - 250ms pulse")
+            print(f"DMX Ch{dmx_ch} FIRE (GPIO {gpio_num} HIGH) - 250ms pulse")
             sleep_ms(250)
             pin.low()
-            print(f"Ch{ch_num} RELEASE (GPIO {gpio_num} LOW)")
+            print(f"DMX Ch{dmx_ch} RELEASE (GPIO {gpio_num} LOW)")
         else:
             sleep_ms(10)
 
-def queue_trigger(ch_num):
+def queue_trigger(ch_num, dmx_ch):
     with queue_lock:
-        pending_triggers.append(ch_num)
+        pending_triggers.append((ch_num, dmx_ch))
 
 # Start Core 1
 _thread.start_new_thread(core1_runner, ())
@@ -141,19 +142,19 @@ while True:
                 # Backtrack to find the 0x00 start code (should be at first_nonzero - 1)
                 frame_start = first_nonzero - 1
                 
-                # Verify we have enough data: frame_start (0x00) + 16 channels = 17 bytes total
-                if frame_start + 17 > len(rx_buf):
+                # Verify we have enough data: frame_start (0x00) + DMX_START_CHANNEL offset + 16 channels
+                if frame_start + 18 > len(rx_buf):
                     # Not enough data yet - wait for more bytes to arrive
                     break
                 
-
-                
-                # Store this frame's channels from frame_start+1 onwards (right after the 0x00 start code)
+                # Store this frame's channels starting at DMX channel 3 (offset +3 from start code)
+                # DMX ch3 → GPIO 2, DMX ch4 → GPIO 3, etc.
                 # Extract into a temporary list first to avoid boundary issues
+                DMX_START_CHANNEL = 3  # First DMX channel to read (1-based)
                 frame_data = []
                 try:
                     for ch in range(16):
-                        frame_data.append(rx_buf[frame_start + 1 + ch])
+                        frame_data.append(rx_buf[frame_start + DMX_START_CHANNEL + ch])
                 except IndexError:
                     # Safety: if we can't extract, skip this frame and move on
                     rx_buf = rx_buf[frame_start + 1:]
@@ -170,6 +171,7 @@ while True:
                     if frame_count % 3 == 0:
                         for ch_num in range(1, 17):
                             ch = ch_num - 1
+                            dmx_ch = ch_num + DMX_START_CHANNEL - 1  # Actual DMX channel number
                             vals = ch_history[ch]
                             all_on  = all(v > 100 for v in vals)
                             all_off = all(v <= 100 for v in vals)
@@ -180,24 +182,24 @@ while True:
                                 # <= 100: GPIO LOW (stays off)
                                 if all_on and not last_state[ch]:
                                     trigger_pins[1].high()
-                                    print(f">>> Ch1 ON (GPIO 2 HIGH) - vals: {vals}")
+                                    print(f">>> DMX Ch{dmx_ch} ON (GPIO 2 HIGH) - vals: {vals}")
                                     last_state[ch] = True
                                 elif all_off and last_state[ch]:
                                     trigger_pins[1].low()
-                                    print(f">>> Ch1 OFF (GPIO 2 LOW) - vals: {vals}")
+                                    print(f">>> DMX Ch{dmx_ch} OFF (GPIO 2 LOW) - vals: {vals}")
                                     last_state[ch] = False
                             else:
                                 # Channels 2-16: Rising edge → 250ms pulse
                                 if all_on and not last_state[ch]:
-                                    queue_trigger(ch_num)
+                                    queue_trigger(ch_num, dmx_ch)
                                     gpio_num = gpio_map[ch_num]
-                                    print(f">>> Ch{ch_num} QUEUED PULSE (GPIO {gpio_num} HIGH) - vals: {vals}")
+                                    print(f">>> DMX Ch{dmx_ch} QUEUED PULSE (GPIO {gpio_num} HIGH) - vals: {vals}")
                                     last_state[ch] = True
                                 elif all_off:
                                     last_state[ch] = False
                     
-                    # Discard consumed frame (from frame_start onwards for 17 bytes: marker + 16 channels)
-                    rx_buf = rx_buf[frame_start + 17:]
+                    # Discard consumed frame
+                    rx_buf = rx_buf[frame_start + DMX_START_CHANNEL + 16:]
                 else:
                     # Not enough data yet, break and wait for more
                     break
